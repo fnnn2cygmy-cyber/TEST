@@ -666,35 +666,27 @@ local Toggle = FuncTab:CreateToggle({
 })
 
 -- ============================================
--- CHAMS + НИКИ ИГРОКОВ
+-- НИКИ ИГРОКОВ (С АВТО-ОБНОВЛЕНИЕМ)
 -- ============================================
-local chamsConnection = nil
 local nameTags = {}
 local nameTagsEnabled = false
 
--- НАСТРОЙКИ CHAMS
-local chamsSettings = {
-    EnemyColor = Color3.fromRGB(255, 0, 0),
-    TeamColor = Color3.fromRGB(0, 0, 255),
-    Transparency = 0.5
-}
-
 -- ФУНКЦИЯ СОЗДАНИЯ НИКА
-local function createNameTag(player)
-    if not player or not player.Character then return end
+local function createNameTag(pl)
+    if not pl or not pl.Character then return end
+    if pl == player then return end
     
     -- Удаляем старый тег
-    if nameTags[player.Name] then
-        nameTags[player.Name]:Destroy()
-        nameTags[player.Name] = nil
+    if nameTags[pl.Name] then
+        nameTags[pl.Name]:Destroy()
+        nameTags[pl.Name] = nil
     end
     
     if not nameTagsEnabled then return end
     
-    local head = player.Character:FindFirstChild("Head")
+    local head = pl.Character:FindFirstChild("Head")
     if not head then return end
     
-    -- Создаём BillboardGui
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "NameTag"
     billboard.Adornee = head
@@ -703,24 +695,22 @@ local function createNameTag(player)
     billboard.AlwaysOnTop = true
     billboard.Parent = head
     
-    -- Текст с ником
     local textLabel = Instance.new("TextLabel")
     textLabel.Size = UDim2.new(1, 0, 1, 0)
     textLabel.BackgroundTransparency = 1
     textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    textLabel.Text = player.Name
+    textLabel.Text = pl.Name
     textLabel.Font = Enum.Font.GothamBold
     textLabel.TextSize = 18
     textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     textLabel.TextStrokeTransparency = 0.3
     textLabel.Parent = billboard
     
-    nameTags[player.Name] = billboard
+    nameTags[pl.Name] = billboard
 end
 
 -- ФУНКЦИЯ ОБНОВЛЕНИЯ ВСЕХ НИКОВ
 local function updateAllNameTags()
-    -- Удаляем все старые теги
     for name, tag in pairs(nameTags) do
         tag:Destroy()
     end
@@ -738,6 +728,10 @@ end
 -- СЛЕДИМ ЗА НОВЫМИ ИГРОКАМИ
 game.Players.PlayerAdded:Connect(function(pl)
     if pl ~= player then
+        task.wait(0.5)
+        createNameTag(pl)
+        
+        -- Следим за перезаходом
         pl.CharacterAdded:Connect(function()
             task.wait(1)
             createNameTag(pl)
@@ -753,6 +747,16 @@ game.Players.PlayerRemoving:Connect(function(pl)
     end
 end)
 
+-- СЛЕДИМ ЗА РЕСПАВНОМ ВСЕХ ИГРОКОВ (включая уже существующих)
+for _, pl in pairs(players:GetPlayers()) do
+    if pl ~= player then
+        pl.CharacterAdded:Connect(function()
+            task.wait(1)
+            createNameTag(pl)
+        end)
+    end
+end
+
 -- ТОГГЛ НИКОВ
 local nameTagsToggle = FuncTab:CreateToggle({
     Name = "Показывать ники игроков",
@@ -764,7 +768,16 @@ local nameTagsToggle = FuncTab:CreateToggle({
     end
 })
 
--- CHAMS ТОГГЛ
+-- CHAMS (БАЗОВЫЙ ЦВЕТ ЗАВИСИТ ОТ КОМАНДЫ)
+local chamsConnection = nil
+
+-- НАСТРОЙКИ CHAMS
+local chamsSettings = {
+    EnemyColor = Color3.fromRGB(255, 0, 0),
+    TeamColor = Color3.fromRGB(0, 0, 255),
+    Transparency = 0.5
+}
+
 local chamsToggle = FuncTab:CreateToggle({
     Name = "CHAMS (Командные цвета)",
     CurrentValue = false,
