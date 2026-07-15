@@ -1,106 +1,117 @@
+-- Защита от ошибок загрузки
+local Rayfield = nil
+local Sense = nil
+
+-- Пробуем загрузить Rayfield
+local rayfieldUrls = {
+    "https://sirius.menu/rayfield",
+    "https://raw.githubusercontent.com/shlexware/Rayfield/main/source.lua",
+    "https://raw.githubusercontent.com/xHeptc/Rayfield/main/source.lua"
+}
+
+for _, url in ipairs(rayfieldUrls) do
+    if not Rayfield then
+        pcall(function()
+            local content = game:HttpGet(url)
+            if content and content:match("Rayfield") then
+                Rayfield = loadstring(content)()
+            end
+        end)
+    end
+end
+
+if not Rayfield then
+    Rayfield = {
+        CreateWindow = function() return {} end,
+        Notify = function(t) print("[HelloGidra] " .. t.Title .. " - " .. t.Content) end
+    }
+end
+
+-- Пробуем загрузить Sense
+pcall(function()
+    Sense = loadstring(game:HttpGet('https://raw.githubusercontent.com/jensonhirst/Sirius/request/library/sense/source.lua'))()
+end)
+
+if not Sense then
+    Sense = {
+        teamSettings = {
+            enemy = {enabled = false, box = false, boxFill = false, name = false, distance = false},
+            friendly = {enabled = false, box = false, boxFill = false, name = false, distance = false}
+        },
+        Load = function() end,
+        Unload = function() end
+    }
+end
+
+-- ОСНОВНОЙ КОД (БЕЗ HEALTH BAR, ТОЛЬКО СТАБИЛЬНЫЕ ФУНКЦИИ)
 bit32 = {};
 local N = 32;
 local P = 2 ^ N;
-bit32.bnot = function(x)
-	x = x % P;
-	return (P - 1) - x;
-end;
+bit32.bnot = function(x) x = x % P; return (P - 1) - x; end;
 bit32.band = function(x, y)
-	if (y == 255) then
-		return x % 256;
-	end
-	if (y == 65535) then
-		return x % 65536;
-	end
-	if (y == 4294967295) then
-		return x % 4294967296;
-	end
-	x, y = x % P, y % P;
-	local r = 0;
-	local p = 1;
-	for i = 1, N do
-		local a, b = x % 2, y % 2;
-		x, y = math.floor(x / 2), math.floor(y / 2);
-		if ((a + b) == 2) then
-			r = r + p;
-		end
-		p = 2 * p;
-	end
-	return r;
+    if (y == 255) then return x % 256; end
+    if (y == 65535) then return x % 65536; end
+    if (y == 4294967295) then return x % 4294967296; end
+    x, y = x % P, y % P;
+    local r = 0;
+    local p = 1;
+    for i = 1, N do
+        local a, b = x % 2, y % 2;
+        x, y = math.floor(x / 2), math.floor(y / 2);
+        if ((a + b) == 2) then r = r + p; end
+        p = 2 * p;
+    end
+    return r;
 end;
 bit32.bor = function(x, y)
-	if (y == 255) then
-		return (x - (x % 256)) + 255;
-	end
-	if (y == 65535) then
-		return (x - (x % 65536)) + 65535;
-	end
-	if (y == 4294967295) then
-		return 4294967295;
-	end
-	x, y = x % P, y % P;
-	local r = 0;
-	local p = 1;
-	for i = 1, N do
-		local a, b = x % 2, y % 2;
-		x, y = math.floor(x / 2), math.floor(y / 2);
-		if ((a + b) >= 1) then
-			r = r + p;
-		end
-		p = 2 * p;
-	end
-	return r;
+    if (y == 255) then return (x - (x % 256)) + 255; end
+    if (y == 65535) then return (x - (x % 65536)) + 65535; end
+    if (y == 4294967295) then return 4294967295; end
+    x, y = x % P, y % P;
+    local r = 0;
+    local p = 1;
+    for i = 1, N do
+        local a, b = x % 2, y % 2;
+        x, y = math.floor(x / 2), math.floor(y / 2);
+        if ((a + b) >= 1) then r = r + p; end
+        p = 2 * p;
+    end
+    return r;
 end;
 bit32.bxor = function(x, y)
-	x, y = x % P, y % P;
-	local r = 0;
-	local p = 1;
-	for i = 1, N do
-		local a, b = x % 2, y % 2;
-		x, y = math.floor(x / 2), math.floor(y / 2);
-		if ((a + b) == 1) then
-			r = r + p;
-		end
-		p = 2 * p;
-	end
-	return r;
+    x, y = x % P, y % P;
+    local r = 0;
+    local p = 1;
+    for i = 1, N do
+        local a, b = x % 2, y % 2;
+        x, y = math.floor(x / 2), math.floor(y / 2);
+        if ((a + b) == 1) then r = r + p; end
+        p = 2 * p;
+    end
+    return r;
 end;
 bit32.lshift = function(x, s_amount)
-	if (math.abs(s_amount) >= N) then
-		return 0;
-	end
-	x = x % P;
-	if (s_amount < 0) then
-		return math.floor(x * (2 ^ s_amount));
-	else
-		return (x * (2 ^ s_amount)) % P;
-	end
+    if (math.abs(s_amount) >= N) then return 0; end
+    x = x % P;
+    if (s_amount < 0) then return math.floor(x * (2 ^ s_amount));
+    else return (x * (2 ^ s_amount)) % P; end
 end;
 bit32.rshift = function(x, s_amount)
-	if (math.abs(s_amount) >= N) then
-		return 0;
-	end
-	x = x % P;
-	if (s_amount > 0) then
-		return math.floor(x * (2 ^ -s_amount));
-	else
-		return (x * (2 ^ -s_amount)) % P;
-	end
+    if (math.abs(s_amount) >= N) then return 0; end
+    x = x % P;
+    if (s_amount > 0) then return math.floor(x * (2 ^ -s_amount));
+    else return (x * (2 ^ -s_amount)) % P; end
 end;
 bit32.arshift = function(x, s_amount)
-	if (math.abs(s_amount) >= N) then
-		return 0;
-	end
-	x = x % P;
-	if (s_amount > 0) then
-		local add = 0;
-		if (x >= (P / 2)) then
-			add = P - (2 ^ (N - s_amount));
-		end
-		return math.floor(x * (2 ^ -s_amount)) + add;
-	else
-		return (x * (2 ^ -s_amount)) % P;
-	end
+    if (math.abs(s_amount) >= N) then return 0; end
+    x = x % P;
+    if (s_amount > 0) then
+        local add = 0;
+        if (x >= (P / 2)) then add = P - (2 ^ (N - s_amount)); end
+        return math.floor(x * (2 ^ -s_amount)) + add;
+    else
+        return (x * (2 ^ -s_amount)) % P;
+    end
 end;
 local obf_stringchar = string.char;
 local obf_stringbyte = string.byte;
@@ -110,18 +121,16 @@ local obf_XOR = obf_bitlib.bxor;
 local obf_tableconcat = table.concat;
 local obf_tableinsert = table.insert;
 local function LUAOBFUSACTOR_DECRYPT_STR_0(LUAOBFUSACTOR_STR, LUAOBFUSACTOR_KEY)
-	local result = {};
-	for i = 1, #LUAOBFUSACTOR_STR do
-		obf_tableinsert(result, obf_stringchar(obf_XOR(obf_stringbyte(obf_stringsub(LUAOBFUSACTOR_STR, i, i + 1)), obf_stringbyte(obf_stringsub(LUAOBFUSACTOR_KEY, 1 + (i % #LUAOBFUSACTOR_KEY), 1 + (i % #LUAOBFUSACTOR_KEY) + 1))) % 256));
-	end
-	return obf_tableconcat(result);
+    local result = {};
+    for i = 1, #LUAOBFUSACTOR_STR do
+        obf_tableinsert(result, obf_stringchar(obf_XOR(obf_stringbyte(obf_stringsub(LUAOBFUSACTOR_STR, i, i + 1)), obf_stringbyte(obf_stringsub(LUAOBFUSACTOR_KEY, 1 + (i % #LUAOBFUSACTOR_KEY), 1 + (i % #LUAOBFUSACTOR_KEY) + 1))) % 256));
+    end
+    return obf_tableconcat(result);
 end
 
 local camera = workspace.CurrentCamera
 local tweenService = game:GetService("TweenService")
 local copy = "https://t.me/HelloGidra"
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-local Sense = loadstring(game:HttpGet('https://raw.githubusercontent.com/jensonhirst/Sirius/request/library/sense/source.lua'))()
 
 autoez=false
 loop_teleport=false
@@ -326,7 +335,7 @@ local function getTarget()
     local nearestPlayer = nil
     local closestPart = nil
     local shortestCursorDistance = aimFov
-	for _, player in ipairs(players:GetPlayers()) do
+    for _, player in ipairs(players:GetPlayers()) do
         if player ~= plr and player.Character and not checkTeam(player) then
             if player.Character.Humanoid.Health >= minHealth or not healthCheck then
                 local targetPart = getClosestPart(player.Character)
@@ -464,11 +473,11 @@ end)
 
 -- CTRL TP
 UserInputService.InputBegan:Connect(function(i, _)
-	if i.UserInputType==Enum.UserInputType.MouseButton1 then
-		if ctrl_tp and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-			player.Character:MoveTo(Vector3.new(mouse.Hit.x, mouse.Hit.y, mouse.Hit.z))
-		end
-	end
+    if i.UserInputType==Enum.UserInputType.MouseButton1 then
+        if ctrl_tp and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+            player.Character:MoveTo(Vector3.new(mouse.Hit.x, mouse.Hit.y, mouse.Hit.z))
+        end
+    end
 end)
 
 local Window = Rayfield:CreateWindow({
@@ -566,10 +575,10 @@ local Slider = MainTab:CreateSlider({
 })
 
 MainTab:CreateButton({
-	Name='Sit',
-	Callback=function()
-		player.Character.Humanoid.Sit=true
-	end,
+    Name='Sit',
+    Callback=function()
+        player.Character.Humanoid.Sit=true
+    end,
 })
 
 local FuncTab = Window:CreateTab("Functions", "parentheses")
@@ -644,28 +653,26 @@ local Toggle = FuncTab:CreateToggle({
 local FunccSection = FuncTab:CreateSection("Functions")
 
 local Toggle = FuncTab:CreateToggle({
-	Name = "No Clip",
-	CurrentValue = false,
-	Flag = "universal_noclip",
-	Callback = function(state)
-		if state then
-			noclip=RunService.Stepped:Connect(function()
-				for i,v in pairs(player.Character:GetDescendants()) do
-					if v:IsA('BasePart') and v.CanCollide then
-						v.CanCollide=false
-					end
-				end
-				wait()
-			end)
-		else
-			noclip:Disconnect()
-		end
-	end,
+    Name = "No Clip",
+    CurrentValue = false,
+    Flag = "universal_noclip",
+    Callback = function(state)
+        if state then
+            noclip=RunService.Stepped:Connect(function()
+                for i,v in pairs(player.Character:GetDescendants()) do
+                    if v:IsA('BasePart') and v.CanCollide then
+                        v.CanCollide=false
+                    end
+                end
+                wait()
+            end)
+        else
+            noclip:Disconnect()
+        end
+    end,
 })
 
--- ============================================
--- CHAMS + НИКИ + HEALTH BAR (ТОЛЬКО ВРАГИ)
--- ============================================
+-- CHAMS
 local chamsConnection = nil
 
 local chamsSettings = {
@@ -674,181 +681,6 @@ local chamsSettings = {
     Transparency = 0.5
 }
 
--- НИКИ ИГРОКОВ
-local nameTagsEnabled = false
-local nameTagGui = nil
-local nameTagLabels = {}
-
--- HEALTH BAR
-local healthBarEnabled = false
-local healthBarGui = nil
-local healthBarLabels = {}
-
--- СОЗДАЁМ GUI ДЛЯ НИКОВ
-local function createNameTagGUI()
-    if nameTagGui then return end
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "NameTags"
-    screenGui.ResetOnSpawn = false
-    screenGui.Parent = player.PlayerGui
-    nameTagGui = screenGui
-end
-createNameTagGUI()
-
--- СОЗДАЁМ GUI ДЛЯ HEALTH BAR
-local function createHealthBarGUI()
-    if healthBarGui then return end
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "HealthBars"
-    screenGui.ResetOnSpawn = false
-    screenGui.Parent = player.PlayerGui
-    healthBarGui = screenGui
-end
-createHealthBarGUI()
-
--- ФУНКЦИЯ ПРОВЕРКИ ВРАГ
-local function isEnemy(pl)
-    if not teamCheck then return true end
-    return pl.Team ~= player.Team
-end
-
--- ОБНОВЛЯЕМ НИКИ И HEALTH BAR
-local function updateNameTags()
-    if not nameTagsEnabled and not healthBarEnabled then
-        for _, label in pairs(nameTagLabels) do label:Destroy() end
-        for _, label in pairs(healthBarLabels) do label:Destroy() end
-        nameTagLabels = {}
-        healthBarLabels = {}
-        return
-    end
-    
-    if nameTagsEnabled then
-        for _, label in pairs(nameTagLabels) do label:Destroy() end
-        nameTagLabels = {}
-    end
-    
-    if healthBarEnabled then
-        for _, label in pairs(healthBarLabels) do label:Destroy() end
-        healthBarLabels = {}
-    end
-    
-    for _, pl in pairs(players:GetPlayers()) do
-        if pl ~= player and pl.Character and pl.Character:FindFirstChild("Head") then
-            -- ПРОВЕРЯЕМ ТОЛЬКО ВРАГОВ
-            if healthBarEnabled and not isEnemy(pl) then continue end
-            
-            local head = pl.Character.Head
-            local pos, onScreen = camera:WorldToViewportPoint(head.Position + Vector3.new(0, 2.5, 0))
-            
-            if onScreen then
-                -- НИК (для всех, если включено)
-                if nameTagsEnabled then
-                    local label = Instance.new("TextLabel")
-                    label.Size = UDim2.new(0, 200, 0, 30)
-                    label.Position = UDim2.new(0, pos.X - 100, 0, pos.Y - 15)
-                    label.BackgroundTransparency = 1
-                    label.TextColor3 = isEnemy(pl) and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
-                    label.Text = pl.Name
-                    label.Font = Enum.Font.GothamBold
-                    label.TextSize = 16
-                    label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                    label.TextStrokeTransparency = 0.3
-                    label.Parent = nameTagGui
-                    nameTagLabels[pl.Name] = label
-                end
-                
-                -- HEALTH BAR (ТОЛЬКО ДЛЯ ВРАГОВ)
-                if healthBarEnabled and isEnemy(pl) then
-                    local humanoid = pl.Character:FindFirstChild("Humanoid")
-                    if humanoid then
-                        local health = humanoid.Health
-                        local maxHealth = humanoid.MaxHealth
-                        local healthPercent = math.clamp(health / maxHealth, 0, 1)
-                        
-                        -- ВЕРТИКАЛЬНАЯ ПОЛОСКА
-                        local frame = Instance.new("Frame")
-                        frame.Size = UDim2.new(0, 6, 0, 30)
-                        frame.Position = UDim2.new(0, pos.X - 3, 0, pos.Y - 15)
-                        frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-                        frame.BackgroundTransparency = 0.5
-                        frame.BorderSizePixel = 0
-                        frame.Parent = healthBarGui
-                        
-                        local fill = Instance.new("Frame")
-                        fill.Size = UDim2.new(1, 0, healthPercent, 0)
-                        fill.Position = UDim2.new(0, 0, 1 - healthPercent, 0)
-                        fill.BackgroundColor3 = Color3.fromRGB(
-                            255 * (1 - healthPercent),
-                            255 * healthPercent,
-                            0
-                        )
-                        fill.BorderSizePixel = 0
-                        fill.Parent = frame
-                        
-                        healthBarLabels[pl.Name] = frame
-                    end
-                end
-            end
-        end
-    end
-end
-
--- ОБНОВЛЯЕМ ВСЁ КАЖДЫЙ КАДР
-RunService.RenderStepped:Connect(function()
-    if nameTagsEnabled or healthBarEnabled then
-        updateNameTags()
-    end
-end)
-
--- ОБНОВЛЯЕМ ПРИ ПОЯВЛЕНИИ НОВЫХ ИГРОКОВ
-game.Players.PlayerAdded:Connect(function()
-    task.wait(0.5)
-    if nameTagsEnabled or healthBarEnabled then
-        updateNameTags()
-    end
-end)
-
--- УДАЛЯЕМ ПРИ УХОДЕ ИГРОКОВ
-game.Players.PlayerRemoving:Connect(function(pl)
-    if nameTagLabels[pl.Name] then
-        nameTagLabels[pl.Name]:Destroy()
-        nameTagLabels[pl.Name] = nil
-    end
-    if healthBarLabels[pl.Name] then
-        healthBarLabels[pl.Name]:Destroy()
-        healthBarLabels[pl.Name] = nil
-    end
-end)
-
--- ТОГГЛ НИКОВ
-local nameTagsToggle = FuncTab:CreateToggle({
-    Name = "Показывать ники игроков",
-    CurrentValue = false,
-    Flag = "nametags_toggle",
-    Callback = function(value)
-        nameTagsEnabled = value
-        if not value then
-            for _, label in pairs(nameTagLabels) do label:Destroy() end
-            nameTagLabels = {}
-        end
-    end
-})
-
--- ТОГГЛ HEALTH BAR
-local healthBarToggle = FuncTab:CreateToggle({
-    Name = "Показывать здоровье врагов",
-    CurrentValue = false,
-    Flag = "healthbar_toggle",
-    Callback = function(value)
-        healthBarEnabled = value
-        if not value then
-            for _, label in pairs(healthBarLabels) do label:Destroy() end
-            healthBarLabels = {}
-        end
-    end
-})
-
--- CHAMS ТОГГЛ
 local chamsToggle = FuncTab:CreateToggle({
     Name = "CHAMS (Командные цвета)",
     CurrentValue = false,
@@ -1467,15 +1299,15 @@ loadstring(game:HttpGet("https://pastebin.com/raw/p3TfEqQ2"))()
 })
 
 local Toggle = OtherTab:CreateToggle({
-	Name = "Anti-AFK",
-	CurrentValue = false,
-	Flag = "universal_antiafk",
-	Callback=function(state)
-		for i,v in pairs(getconnections(player.Idled)) do
-			if state then v:Disable() end
-			if not state then v:Enable() end
-		end
-	end,
+    Name = "Anti-AFK",
+    CurrentValue = false,
+    Flag = "universal_antiafk",
+    Callback=function(state)
+        for i,v in pairs(getconnections(player.Idled)) do
+            if state then v:Disable() end
+            if not state then v:Enable() end
+        end
+    end,
 })
 
 local Button = OtherTab:CreateButton({
@@ -1510,40 +1342,40 @@ loadstring(game:HttpGet('https://raw.githubusercontent.com/GhostPlayer352/Test4/
 
 local Other2Section = OtherTab:CreateSection("New Other Scripts! (2.00)")
 local Toggle = OtherTab:CreateToggle({
-	Name = "AutoEZ",
-	CurrentValue = false,
-	Flag = "universal_autoez",
-	Callback = function(state)
-		autoez=state
-		while autoez and wait(10) do
-			local num=math.random(1, 6)
-			if num==1 then
-				text='ez killed by antioder hub'
-			elseif num==2 then
-				text='ezzzzzz'
-			elseif num==3 then
-				text='ezzz antioder hub on top'
-			elseif num==4 then
-				text='ez noobs'
-			elseif num==5 then
-				text='ezzed by antioder hubb'
-			elseif num==6 then
-				text='ezzzzz win by antioder hub'
-			end
-			if game.PlaceId==286090429 then
-				local args = {
-				    [1] = "Hah!",
-				    [2] = text,
-				    [3] = false,
-				    [5] = false,
-				    [6] = true
-				}
-				game:GetService("ReplicatedStorage").Events.PlayerChatted:FireServer(unpack(args))
-				continue
-			end
-			game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(unpack({[1]=text, [2]='All'}))
-		end
-	end,
+    Name = "AutoEZ",
+    CurrentValue = false,
+    Flag = "universal_autoez",
+    Callback = function(state)
+        autoez=state
+        while autoez and wait(10) do
+            local num=math.random(1, 6)
+            if num==1 then
+                text='ez killed by antioder hub'
+            elseif num==2 then
+                text='ezzzzzz'
+            elseif num==3 then
+                text='ezzz antioder hub on top'
+            elseif num==4 then
+                text='ez noobs'
+            elseif num==5 then
+                text='ezzed by antioder hubb'
+            elseif num==6 then
+                text='ezzzzz win by antioder hub'
+            end
+            if game.PlaceId==286090429 then
+                local args = {
+                    [1] = "Hah!",
+                    [2] = text,
+                    [3] = false,
+                    [5] = false,
+                    [6] = true
+                }
+                game:GetService("ReplicatedStorage").Events.PlayerChatted:FireServer(unpack(args))
+                continue
+            end
+            game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(unpack({[1]=text, [2]='All'}))
+        end
+    end,
 })
 
 local TROLLTab = Window:CreateTab("Raid Scripts", "ban")
@@ -1670,50 +1502,50 @@ local VisualTab = Window:CreateTab("Visual", "eye")
 local VisualSection = VisualTab:CreateSection("Visual")
 
 local Toggle = VisualTab:CreateToggle({
-	Name = "Pink Glasses",
-	CurrentValue = false,
-	Flag = "universal_pink_glasses",
-	Callback=function(state)
-		if state then
-			game.Lighting.Ambient=Color3.fromRGB(225, 20, 147)
-			game.Lighting.OutdoorAmbient=Color3.fromRGB(225, 20, 147)
-		else
-			game.Lighting.Ambient=ambient
-			game.Lighting.OutdoorAmbient=outdoor_ambient
-		end
-	end,
+    Name = "Pink Glasses",
+    CurrentValue = false,
+    Flag = "universal_pink_glasses",
+    Callback=function(state)
+        if state then
+            game.Lighting.Ambient=Color3.fromRGB(225, 20, 147)
+            game.Lighting.OutdoorAmbient=Color3.fromRGB(225, 20, 147)
+        else
+            game.Lighting.Ambient=ambient
+            game.Lighting.OutdoorAmbient=outdoor_ambient
+        end
+    end,
 })
 
 local Toggle = VisualTab:CreateToggle({
-	Name = "Remove Fog",
-	CurrentValue = false,
-	Flag = "universal_remove_fog",
-	Callback = function(state)
-		if state then
-			game.Lighting.FogStart=9e9
-		else
-			game.Lighting.FogStart=fogstart
-		end
-	end,
+    Name = "Remove Fog",
+    CurrentValue = false,
+    Flag = "universal_remove_fog",
+    Callback = function(state)
+        if state then
+            game.Lighting.FogStart=9e9
+        else
+            game.Lighting.FogStart=fogstart
+        end
+    end,
 })
 
 local Toggle = VisualTab:CreateToggle({
-	Name = "Full Brightness",
-	CurrentValue = false,
-	Flag = "universal_full_brightness",
-	Callback = function(state)
-		if state then
-			game.Lighting.Brightness=2
-			game.Lighting.ClockTime=14
-			game.Lighting.GlobalShadows=false
-			game.Lighting.OutdoorAmbient=Color3.fromRGB(128, 128, 128)
-		else
-			game.Lighting.Brightness=brightness
-			game.Lighting.ClockTime=clocktime
-			game.Lighting.GlobalShadows=shadows
-			game.Lighting.OutdoorAmbient=outdoor_ambient
-		end
-	end,
+    Name = "Full Brightness",
+    CurrentValue = false,
+    Flag = "universal_full_brightness",
+    Callback = function(state)
+        if state then
+            game.Lighting.Brightness=2
+            game.Lighting.ClockTime=14
+            game.Lighting.GlobalShadows=false
+            game.Lighting.OutdoorAmbient=Color3.fromRGB(128, 128, 128)
+        else
+            game.Lighting.Brightness=brightness
+            game.Lighting.ClockTime=clocktime
+            game.Lighting.GlobalShadows=shadows
+            game.Lighting.OutdoorAmbient=outdoor_ambient
+        end
+    end,
 })
 
 local SexTab = Window:CreateTab("S*x", "book-heart")
@@ -1792,11 +1624,7 @@ loadstring(game:HttpGet("https://pastefy.app/YZoglOyJ/raw"))()
    end,
 })
 
--- ============================================
--- ВКЛАДКА SETTINGS
--- ============================================
 local SettingsTab = Window:CreateTab("Settings", "settings")
-
 local SettingsSection = SettingsTab:CreateSection("Управление")
 
 local fpsToggle = SettingsTab:CreateToggle({
@@ -1848,15 +1676,6 @@ local disableAllButton = SettingsTab:CreateButton({
             plr.Character.Humanoid.AutoRotate = true
             spinBot = false
         end
-
-        -- Выключаем ники и health bar
-        nameTagsEnabled = false
-        for _, label in pairs(nameTagLabels) do label:Destroy() end
-        nameTagLabels = {}
-        
-        healthBarEnabled = false
-        for _, label in pairs(healthBarLabels) do label:Destroy() end
-        healthBarLabels = {}
 
         game.Lighting.Ambient = ambient
         game.Lighting.OutdoorAmbient = outdoor_ambient
