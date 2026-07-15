@@ -666,96 +666,161 @@ local Toggle = FuncTab:CreateToggle({
 })
 
 -- ============================================
--- НИКИ ИГРОКОВ (С АВТО-ОБНОВЛЕНИЕМ)
+-- CHAMS + НИКИ + HEALTH BAR (ТОЛЬКО ВРАГИ)
 -- ============================================
-local nameTags = {}
-local nameTagsEnabled = false
+local chamsConnection = nil
 
--- ФУНКЦИЯ СОЗДАНИЯ НИКА
-local function createNameTag(pl)
-    if not pl or not pl.Character then return end
-    if pl == player then return end
-    
-    -- Удаляем старый тег
-    if nameTags[pl.Name] then
-        nameTags[pl.Name]:Destroy()
-        nameTags[pl.Name] = nil
-    end
-    
-    if not nameTagsEnabled then return end
-    
-    local head = pl.Character:FindFirstChild("Head")
-    if not head then return end
-    
-    local billboard = Instance.new("BillboardGui")
-    billboard.Name = "NameTag"
-    billboard.Adornee = head
-    billboard.Size = UDim2.new(0, 200, 0, 50)
-    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
-    billboard.AlwaysOnTop = true
-    billboard.Parent = head
-    
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(1, 0, 1, 0)
-    textLabel.BackgroundTransparency = 1
-    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    textLabel.Text = pl.Name
-    textLabel.Font = Enum.Font.GothamBold
-    textLabel.TextSize = 18
-    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    textLabel.TextStrokeTransparency = 0.3
-    textLabel.Parent = billboard
-    
-    nameTags[pl.Name] = billboard
+local chamsSettings = {
+    EnemyColor = Color3.fromRGB(255, 0, 0),
+    TeamColor = Color3.fromRGB(0, 0, 255),
+    Transparency = 0.5
+}
+
+-- НИКИ ИГРОКОВ
+local nameTagsEnabled = false
+local nameTagGui = nil
+local nameTagLabels = {}
+
+-- HEALTH BAR
+local healthBarEnabled = false
+local healthBarGui = nil
+local healthBarLabels = {}
+
+-- СОЗДАЁМ GUI ДЛЯ НИКОВ
+local function createNameTagGUI()
+    if nameTagGui then return end
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "NameTags"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = player.PlayerGui
+    nameTagGui = screenGui
+end
+createNameTagGUI()
+
+-- СОЗДАЁМ GUI ДЛЯ HEALTH BAR
+local function createHealthBarGUI()
+    if healthBarGui then return end
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "HealthBars"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = player.PlayerGui
+    healthBarGui = screenGui
+end
+createHealthBarGUI()
+
+-- ФУНКЦИЯ ПРОВЕРКИ ВРАГ
+local function isEnemy(pl)
+    if not teamCheck then return true end
+    return pl.Team ~= player.Team
 end
 
--- ФУНКЦИЯ ОБНОВЛЕНИЯ ВСЕХ НИКОВ
-local function updateAllNameTags()
-    for name, tag in pairs(nameTags) do
-        tag:Destroy()
+-- ОБНОВЛЯЕМ НИКИ И HEALTH BAR
+local function updateNameTags()
+    if not nameTagsEnabled and not healthBarEnabled then
+        for _, label in pairs(nameTagLabels) do label:Destroy() end
+        for _, label in pairs(healthBarLabels) do label:Destroy() end
+        nameTagLabels = {}
+        healthBarLabels = {}
+        return
     end
-    nameTags = {}
     
-    if not nameTagsEnabled then return end
+    if nameTagsEnabled then
+        for _, label in pairs(nameTagLabels) do label:Destroy() end
+        nameTagLabels = {}
+    end
+    
+    if healthBarEnabled then
+        for _, label in pairs(healthBarLabels) do label:Destroy() end
+        healthBarLabels = {}
+    end
     
     for _, pl in pairs(players:GetPlayers()) do
-        if pl ~= player then
-            createNameTag(pl)
+        if pl ~= player and pl.Character and pl.Character:FindFirstChild("Head") then
+            -- ПРОВЕРЯЕМ ТОЛЬКО ВРАГОВ
+            if healthBarEnabled and not isEnemy(pl) then continue end
+            
+            local head = pl.Character.Head
+            local pos, onScreen = camera:WorldToViewportPoint(head.Position + Vector3.new(0, 2.5, 0))
+            
+            if onScreen then
+                -- НИК (для всех, если включено)
+                if nameTagsEnabled then
+                    local label = Instance.new("TextLabel")
+                    label.Size = UDim2.new(0, 200, 0, 30)
+                    label.Position = UDim2.new(0, pos.X - 100, 0, pos.Y - 15)
+                    label.BackgroundTransparency = 1
+                    label.TextColor3 = isEnemy(pl) and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
+                    label.Text = pl.Name
+                    label.Font = Enum.Font.GothamBold
+                    label.TextSize = 16
+                    label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                    label.TextStrokeTransparency = 0.3
+                    label.Parent = nameTagGui
+                    nameTagLabels[pl.Name] = label
+                end
+                
+                -- HEALTH BAR (ТОЛЬКО ДЛЯ ВРАГОВ)
+                if healthBarEnabled and isEnemy(pl) then
+                    local humanoid = pl.Character:FindFirstChild("Humanoid")
+                    if humanoid then
+                        local health = humanoid.Health
+                        local maxHealth = humanoid.MaxHealth
+                        local healthPercent = math.clamp(health / maxHealth, 0, 1)
+                        
+                        -- ВЕРТИКАЛЬНАЯ ПОЛОСКА
+                        local frame = Instance.new("Frame")
+                        frame.Size = UDim2.new(0, 6, 0, 30)
+                        frame.Position = UDim2.new(0, pos.X - 3, 0, pos.Y - 15)
+                        frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+                        frame.BackgroundTransparency = 0.5
+                        frame.BorderSizePixel = 0
+                        frame.Parent = healthBarGui
+                        
+                        local fill = Instance.new("Frame")
+                        fill.Size = UDim2.new(1, 0, healthPercent, 0)
+                        fill.Position = UDim2.new(0, 0, 1 - healthPercent, 0)
+                        fill.BackgroundColor3 = Color3.fromRGB(
+                            255 * (1 - healthPercent),
+                            255 * healthPercent,
+                            0
+                        )
+                        fill.BorderSizePixel = 0
+                        fill.Parent = frame
+                        
+                        healthBarLabels[pl.Name] = frame
+                    end
+                end
+            end
         end
     end
 end
 
--- СЛЕДИМ ЗА НОВЫМИ ИГРОКАМИ
-game.Players.PlayerAdded:Connect(function(pl)
-    if pl ~= player then
-        task.wait(0.5)
-        createNameTag(pl)
-        
-        -- Следим за перезаходом
-        pl.CharacterAdded:Connect(function()
-            task.wait(1)
-            createNameTag(pl)
-        end)
+-- ОБНОВЛЯЕМ ВСЁ КАЖДЫЙ КАДР
+RunService.RenderStepped:Connect(function()
+    if nameTagsEnabled or healthBarEnabled then
+        updateNameTags()
     end
 end)
 
--- СЛЕДИМ ЗА УХОДОМ ИГРОКОВ
+-- ОБНОВЛЯЕМ ПРИ ПОЯВЛЕНИИ НОВЫХ ИГРОКОВ
+game.Players.PlayerAdded:Connect(function()
+    task.wait(0.5)
+    if nameTagsEnabled or healthBarEnabled then
+        updateNameTags()
+    end
+end)
+
+-- УДАЛЯЕМ ПРИ УХОДЕ ИГРОКОВ
 game.Players.PlayerRemoving:Connect(function(pl)
-    if nameTags[pl.Name] then
-        nameTags[pl.Name]:Destroy()
-        nameTags[pl.Name] = nil
+    if nameTagLabels[pl.Name] then
+        nameTagLabels[pl.Name]:Destroy()
+        nameTagLabels[pl.Name] = nil
+    end
+    if healthBarLabels[pl.Name] then
+        healthBarLabels[pl.Name]:Destroy()
+        healthBarLabels[pl.Name] = nil
     end
 end)
-
--- СЛЕДИМ ЗА РЕСПАВНОМ ВСЕХ ИГРОКОВ (включая уже существующих)
-for _, pl in pairs(players:GetPlayers()) do
-    if pl ~= player then
-        pl.CharacterAdded:Connect(function()
-            task.wait(1)
-            createNameTag(pl)
-        end)
-    end
-end
 
 -- ТОГГЛ НИКОВ
 local nameTagsToggle = FuncTab:CreateToggle({
@@ -764,20 +829,28 @@ local nameTagsToggle = FuncTab:CreateToggle({
     Flag = "nametags_toggle",
     Callback = function(value)
         nameTagsEnabled = value
-        updateAllNameTags()
+        if not value then
+            for _, label in pairs(nameTagLabels) do label:Destroy() end
+            nameTagLabels = {}
+        end
     end
 })
 
--- CHAMS (БАЗОВЫЙ ЦВЕТ ЗАВИСИТ ОТ КОМАНДЫ)
-local chamsConnection = nil
+-- ТОГГЛ HEALTH BAR
+local healthBarToggle = FuncTab:CreateToggle({
+    Name = "Показывать здоровье врагов",
+    CurrentValue = false,
+    Flag = "healthbar_toggle",
+    Callback = function(value)
+        healthBarEnabled = value
+        if not value then
+            for _, label in pairs(healthBarLabels) do label:Destroy() end
+            healthBarLabels = {}
+        end
+    end
+})
 
--- НАСТРОЙКИ CHAMS
-local chamsSettings = {
-    EnemyColor = Color3.fromRGB(255, 0, 0),
-    TeamColor = Color3.fromRGB(0, 0, 255),
-    Transparency = 0.5
-}
-
+-- CHAMS ТОГГЛ
 local chamsToggle = FuncTab:CreateToggle({
     Name = "CHAMS (Командные цвета)",
     CurrentValue = false,
@@ -1778,12 +1851,14 @@ local disableAllButton = SettingsTab:CreateButton({
             spinBot = false
         end
 
-        -- Выключаем ники
+        -- Выключаем ники и health bar
         nameTagsEnabled = false
-        for name, tag in pairs(nameTags) do
-            tag:Destroy()
-        end
-        nameTags = {}
+        for _, label in pairs(nameTagLabels) do label:Destroy() end
+        nameTagLabels = {}
+        
+        healthBarEnabled = false
+        for _, label in pairs(healthBarLabels) do label:Destroy() end
+        healthBarLabels = {}
 
         game.Lighting.Ambient = ambient
         game.Lighting.OutdoorAmbient = outdoor_ambient
