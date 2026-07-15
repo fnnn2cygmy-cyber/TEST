@@ -221,7 +221,6 @@ local crosshairThickness = 2
 local crosshairObjects = {}
 
 local function createCrosshair()
-    -- Удаляем старый прицел
     for _, obj in pairs(crosshairObjects) do
         obj:Remove()
     end
@@ -236,7 +235,6 @@ local function createCrosshair()
     local color = crosshairColor
 
     if crosshairStyle == "Крест" then
-        -- 4 линии (классический крест)
         local function createLine(fromX, fromY, toX, toY)
             local line = Drawing.new("Line")
             line.Visible = true
@@ -246,7 +244,6 @@ local function createCrosshair()
             line.To = Vector2.new(toX, toY)
             table.insert(crosshairObjects, line)
         end
-
         createLine(centerX - size, centerY, centerX - size/3, centerY)
         createLine(centerX + size/3, centerY, centerX + size, centerY)
         createLine(centerX, centerY - size, centerX, centerY - size/3)
@@ -280,7 +277,6 @@ local function createCrosshair()
         table.insert(crosshairObjects, dot)
 
     elseif crosshairStyle == "Снайперский" then
-        -- Тонкие линии с точкой
         local function createLine(fromX, fromY, toX, toY)
             local line = Drawing.new("Line")
             line.Visible = true
@@ -290,7 +286,6 @@ local function createCrosshair()
             line.To = Vector2.new(toX, toY)
             table.insert(crosshairObjects, line)
         end
-
         createLine(centerX, centerY - size * 1.5, centerX, centerY - size/2)
         createLine(centerX, centerY + size/2, centerX, centerY + size * 1.5)
         createLine(centerX - size * 1.5, centerY, centerX - size/2, centerY)
@@ -312,73 +307,6 @@ local function updateCrosshair()
     end
     crosshairObjects = {}
     createCrosshair()
-end
-
--- ============================================
--- SKELETON ESP
--- ============================================
-local skeletonEnabled = false
-local skeletonLines = {}
-local skeletonConnection = nil
-
-local function getJoints(character)
-    local joints = {}
-    local function addJoint(part)
-        if part and part:IsA("BasePart") then
-            local pos, onScreen = camera:WorldToViewportPoint(part.Position)
-            if onScreen then
-                table.insert(joints, {Part = part, ScreenPos = Vector2.new(pos.X, pos.Y)})
-            end
-        end
-    end
-
-    local head = character:FindFirstChild("Head")
-    local torso = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
-    local leftArm = character:FindFirstChild("Left Arm") or character:FindFirstChild("LeftUpperArm")
-    local rightArm = character:FindFirstChild("Right Arm") or character:FindFirstChild("RightUpperArm")
-    local leftLeg = character:FindFirstChild("Left Leg") or character:FindFirstChild("LeftLowerLeg")
-    local rightLeg = character:FindFirstChild("Right Leg") or character:FindFirstChild("RightLowerLeg")
-
-    if head then addJoint(head) end
-    if torso then addJoint(torso) end
-    if leftArm then addJoint(leftArm) end
-    if rightArm then addJoint(rightArm) end
-    if leftLeg then addJoint(leftLeg) end
-    if rightLeg then addJoint(rightLeg) end
-
-    return joints
-end
-
-local function drawSkeleton()
-    -- Очищаем старые линии
-    for _, line in pairs(skeletonLines) do
-        line:Remove()
-    end
-    skeletonLines = {}
-
-    if not skeletonEnabled then return end
-
-    for _, pl in pairs(players:GetPlayers()) do
-        if pl ~= player and pl.Character then
-            local joints = getJoints(pl.Character)
-            if #joints >= 2 then
-                -- Соединяем все точки линиями (простой скелет)
-                for i = 1, #joints do
-                    for j = i + 1, #joints do
-                        if math.random(1, 10) > 7 then -- Рандомно соединяем для красоты
-                            local line = Drawing.new("Line")
-                            line.Visible = true
-                            line.Color = Color3.fromRGB(0, 255, 0)
-                            line.Thickness = 1
-                            line.From = joints[i].ScreenPos
-                            line.To = joints[j].ScreenPos
-                            table.insert(skeletonLines, line)
-                        end
-                    end
-                end
-            end
-        end
-    end
 end
 
 -- ============================================
@@ -585,11 +513,6 @@ RunService.RenderStepped:Connect(function()
         else
             currentTarget = nil
         end
-    end
-
-    -- Skeleton ESP обновляется каждый кадр
-    if skeletonEnabled then
-        drawSkeleton()
     end
 end)
 
@@ -1755,28 +1678,6 @@ local thicknessSlider = CrosshairTab:CreateSlider({
     end
 })
 
--- ============================================
--- НОВАЯ ВКЛАДКА "Skeleton ESP"
--- ============================================
-local SkeletonTab = Window:CreateTab("Skeleton ESP", "bone")
-
-local SkeletonSection = SkeletonTab:CreateSection("Настройки Skeleton ESP")
-
-local skeletonToggle = SkeletonTab:CreateToggle({
-    Name = "Включить Skeleton ESP",
-    CurrentValue = false,
-    Flag = "skeleton_toggle",
-    Callback = function(value)
-        skeletonEnabled = value
-        if not value then
-            for _, line in pairs(skeletonLines) do
-                line:Remove()
-            end
-            skeletonLines = {}
-        end
-    end
-})
-
 local VisualTab = Window:CreateTab("Visual", "eye")
 local VisualSection = VisualTab:CreateSection("Visual")
 
@@ -1966,13 +1867,6 @@ local disableAllButton = SettingsTab:CreateButton({
             obj:Remove()
         end
         crosshairObjects = {}
-
-        -- Выключаем Skeleton ESP
-        skeletonEnabled = false
-        for _, line in pairs(skeletonLines) do
-            line:Remove()
-        end
-        skeletonLines = {}
 
         game.Lighting.Ambient = ambient
         game.Lighting.OutdoorAmbient = outdoor_ambient
