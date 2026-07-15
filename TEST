@@ -211,105 +211,6 @@ fovCircle.Visible = false
 local currentTarget = nil
 
 -- ============================================
--- КАСТОМНЫЙ ПРИЦЕЛ (CUSTOM CROSSHAIR)
--- ============================================
-local crosshairEnabled = false
-local crosshairStyle = "Крест"
-local crosshairColor = Color3.fromRGB(255, 255, 255)
-local crosshairSize = 15
-local crosshairThickness = 2
-local crosshairObjects = {}
-
-local function createCrosshair()
-    for _, obj in pairs(crosshairObjects) do
-        obj:Remove()
-    end
-    crosshairObjects = {}
-
-    if not crosshairEnabled then return end
-
-    local centerX = camera.ViewportSize.X / 2
-    local centerY = camera.ViewportSize.Y / 2
-    local size = crosshairSize
-    local thickness = crosshairThickness
-    local color = crosshairColor
-
-    if crosshairStyle == "Крест" then
-        local function createLine(fromX, fromY, toX, toY)
-            local line = Drawing.new("Line")
-            line.Visible = true
-            line.Color = color
-            line.Thickness = thickness
-            line.From = Vector2.new(fromX, fromY)
-            line.To = Vector2.new(toX, toY)
-            table.insert(crosshairObjects, line)
-        end
-        createLine(centerX - size, centerY, centerX - size/3, centerY)
-        createLine(centerX + size/3, centerY, centerX + size, centerY)
-        createLine(centerX, centerY - size, centerX, centerY - size/3)
-        createLine(centerX, centerY + size/3, centerX, centerY + size)
-
-    elseif crosshairStyle == "Точка" then
-        local dot = Drawing.new("Circle")
-        dot.Visible = true
-        dot.Color = color
-        dot.Radius = size / 3
-        dot.Filled = true
-        dot.Position = Vector2.new(centerX, centerY)
-        table.insert(crosshairObjects, dot)
-
-    elseif crosshairStyle == "Круг" then
-        local circle = Drawing.new("Circle")
-        circle.Visible = true
-        circle.Color = color
-        circle.Radius = size
-        circle.Filled = false
-        circle.Thickness = thickness
-        circle.Position = Vector2.new(centerX, centerY)
-        table.insert(crosshairObjects, circle)
-
-        local dot = Drawing.new("Circle")
-        dot.Visible = true
-        dot.Color = color
-        dot.Radius = 2
-        dot.Filled = true
-        dot.Position = Vector2.new(centerX, centerY)
-        table.insert(crosshairObjects, dot)
-
-    elseif crosshairStyle == "Снайперский" then
-        local function createLine(fromX, fromY, toX, toY)
-            local line = Drawing.new("Line")
-            line.Visible = true
-            line.Color = color
-            line.Thickness = 1
-            line.From = Vector2.new(fromX, fromY)
-            line.To = Vector2.new(toX, toY)
-            table.insert(crosshairObjects, line)
-        end
-        createLine(centerX, centerY - size * 1.5, centerX, centerY - size/2)
-        createLine(centerX, centerY + size/2, centerX, centerY + size * 1.5)
-        createLine(centerX - size * 1.5, centerY, centerX - size/2, centerY)
-        createLine(centerX + size/2, centerY, centerX + size * 1.5, centerY)
-
-        local dot = Drawing.new("Circle")
-        dot.Visible = true
-        dot.Color = Color3.fromRGB(255, 0, 0)
-        dot.Radius = 2
-        dot.Filled = true
-        dot.Position = Vector2.new(centerX, centerY)
-        table.insert(crosshairObjects, dot)
-    end
-end
-
-local function updateCrosshair()
-    for _, obj in pairs(crosshairObjects) do
-        obj:Remove()
-    end
-    crosshairObjects = {}
-    createCrosshair()
-end
-
--- ============================================
 -- FPS СЧЕТЧИК
 -- ============================================
 local fpsEnabled = false
@@ -552,7 +453,7 @@ mouse.Button2Up:Connect(function()
     end
 end)
 
--- SPEED WALK (РАБОЧАЯ ВЕРСИЯ БЕЗ INFINITE JUMP)
+-- SPEED WALK
 mouse.KeyDown:connect(function(i)
     key=i:byte()
     for i,v in {119, 97, 115, 100} do --WASD
@@ -561,7 +462,6 @@ mouse.KeyDown:connect(function(i)
             return
         end
     end
-    -- БЛОК ПРЫЖКА ПОЛНОСТЬЮ УДАЛЁН
 end)
 
 -- CTRL TP
@@ -581,27 +481,27 @@ local Window = Rayfield:CreateWindow({
    Theme = "Ocean",
    ConfigurationSaving = {
       Enabled = false,
-      FolderName = nil, -- Create a custom folder for your hub/game
+      FolderName = nil,
       FileName = "HelloGidraHub"
    },
    Discord = {
       Enabled = false,
-      Invite = "noinvitelink", -- The Discord invite code, do not include discord.gg/. E.g. discord.gg/ABCD would be ABCD
-      RememberJoins = false -- Set this to false to make them join the discord every time they load it up
+      Invite = "noinvitelink",
+      RememberJoins = false
    },
-   KeySystem = false, -- Set this to true to use our key system
+   KeySystem = false,
    KeySettings = {
       Title = "Aftermath Key System | рџЋ„",
       Subtitle = "РїСЂСѓС„Р°РЅРё С‡С‚Рѕ С‚С‹ РЅРµ С„Р°РЅС‚РѕРј ))0)",
       Note = "РєР»СЋС‡ С‚РѕР»СЊРєРѕ РґР»СЏ РїРѕР»РёСЃРјРµРЅРѕРІ",
-      FileName = "ScriptHubKey1", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
-      SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
-      GrabKeyFromSite = true, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
-      Key = {"https://pastebin.com/raw/texBrQXF"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
+      FileName = "ScriptHubKey1",
+      SaveKey = true,
+      GrabKeyFromSite = true,
+      Key = {"https://pastebin.com/raw/texBrQXF"}
    }
 })
 
-local ABOUTTab = Window:CreateTab("Home", nil) -- Title, Image
+local ABOUTTab = Window:CreateTab("Home", nil)
 local ABOUTSection = ABOUTTab:CreateSection("About script")
 
 Rayfield:Notify({
@@ -609,7 +509,7 @@ Rayfield:Notify({
    Content = "Welcome to the @HelloGidra hub",
    Duration = 5,
    Image = nil,
-   Actions = { -- Notification Buttons
+   Actions = {
       Ignore = {
          Name = "Okay!",
          Callback = function()
@@ -637,7 +537,7 @@ local Slider = MainTab:CreateSlider({
    Increment = 1,
    Suffix = "Speed",
    CurrentValue = 16,
-   Flag = "sliderws", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Flag = "sliderws",
    Callback = function(Value)
         game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = (Value)
    end,
@@ -649,7 +549,7 @@ local Slider = MainTab:CreateSlider({
    Increment = 1,
    Suffix = "Speed",
    CurrentValue = 16,
-   Flag = "sliderjp", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Flag = "sliderjp",
    Callback = function(Value)
         game.Players.LocalPlayer.Character.Humanoid.JumpPower = (Value)
    end,
@@ -661,7 +561,7 @@ local Slider = MainTab:CreateSlider({
    Increment = 1,
    Suffix = "Speed",
    CurrentValue = 16,
-   Flag = "sliderjp", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Flag = "sliderjp",
    Callback = function(Value)
         game.Workspace.Gravity = (Value)
    end,
@@ -765,18 +665,106 @@ local Toggle = FuncTab:CreateToggle({
 	end,
 })
 
--- INFINITE JUMP УДАЛЁН НАХУЙ
-
--- CHAMS (БАЗОВЫЙ ЦВЕТ ЗАВИСИТ ОТ КОМАНДЫ)
+-- ============================================
+-- CHAMS + НИКИ ИГРОКОВ
+-- ============================================
 local chamsConnection = nil
+local nameTags = {}
+local nameTagsEnabled = false
 
 -- НАСТРОЙКИ CHAMS
 local chamsSettings = {
-    EnemyColor = Color3.fromRGB(255, 0, 0),   -- КРАСНЫЙ ДЛЯ ВРАГОВ
-    TeamColor = Color3.fromRGB(0, 0, 255),    -- СИНИЙ ДЛЯ СОЮЗНИКОВ
+    EnemyColor = Color3.fromRGB(255, 0, 0),
+    TeamColor = Color3.fromRGB(0, 0, 255),
     Transparency = 0.5
 }
 
+-- ФУНКЦИЯ СОЗДАНИЯ НИКА
+local function createNameTag(player)
+    if not player or not player.Character then return end
+    
+    -- Удаляем старый тег
+    if nameTags[player.Name] then
+        nameTags[player.Name]:Destroy()
+        nameTags[player.Name] = nil
+    end
+    
+    if not nameTagsEnabled then return end
+    
+    local head = player.Character:FindFirstChild("Head")
+    if not head then return end
+    
+    -- Создаём BillboardGui
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "NameTag"
+    billboard.Adornee = head
+    billboard.Size = UDim2.new(0, 200, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = head
+    
+    -- Текст с ником
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.Text = player.Name
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextSize = 18
+    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    textLabel.TextStrokeTransparency = 0.3
+    textLabel.Parent = billboard
+    
+    nameTags[player.Name] = billboard
+end
+
+-- ФУНКЦИЯ ОБНОВЛЕНИЯ ВСЕХ НИКОВ
+local function updateAllNameTags()
+    -- Удаляем все старые теги
+    for name, tag in pairs(nameTags) do
+        tag:Destroy()
+    end
+    nameTags = {}
+    
+    if not nameTagsEnabled then return end
+    
+    for _, pl in pairs(players:GetPlayers()) do
+        if pl ~= player then
+            createNameTag(pl)
+        end
+    end
+end
+
+-- СЛЕДИМ ЗА НОВЫМИ ИГРОКАМИ
+game.Players.PlayerAdded:Connect(function(pl)
+    if pl ~= player then
+        pl.CharacterAdded:Connect(function()
+            task.wait(1)
+            createNameTag(pl)
+        end)
+    end
+end)
+
+-- СЛЕДИМ ЗА УХОДОМ ИГРОКОВ
+game.Players.PlayerRemoving:Connect(function(pl)
+    if nameTags[pl.Name] then
+        nameTags[pl.Name]:Destroy()
+        nameTags[pl.Name] = nil
+    end
+end)
+
+-- ТОГГЛ НИКОВ
+local nameTagsToggle = FuncTab:CreateToggle({
+    Name = "Показывать ники игроков",
+    CurrentValue = false,
+    Flag = "nametags_toggle",
+    Callback = function(value)
+        nameTagsEnabled = value
+        updateAllNameTags()
+    end
+})
+
+-- CHAMS ТОГГЛ
 local chamsToggle = FuncTab:CreateToggle({
     Name = "CHAMS (Командные цвета)",
     CurrentValue = false,
@@ -785,7 +773,6 @@ local chamsToggle = FuncTab:CreateToggle({
         if value then
             local function applyChams(character)
                 if character and character ~= player.Character then
-                    -- Определяем, враг или союзник
                     local isEnemy = true
                     local pl = game.Players:GetPlayerFromCharacter(character)
                     if pl and pl.Team == player.Team and pl.Team ~= nil then
@@ -934,6 +921,7 @@ local transparencySlider = FuncTab:CreateSlider({
     end
 })
 
+-- AIMBOT
 local FuncccSection = FuncTab:CreateSection("Aimbot")
 local viewEnabled = false
 local selectedViewPlayer = nil
@@ -1271,7 +1259,7 @@ loadstring(game:HttpGet("https://pastebin.com/raw/sAVghM5x"))()
    end,
 })
 
--- НОВАЯ ВКЛАДКА "Other Scripts"
+-- Other Scripts
 local OtherScriptsTab = Window:CreateTab("Other Scripts", "file-code-2")
 local OtherSection = OtherScriptsTab:CreateSection("Other Scripts")
 
@@ -1296,16 +1284,12 @@ OtherScriptsTab:CreateButton({
    end,
 })
 
--- ============================================
--- ДОБАВЛЕНА НОВАЯ КНОПКА UGC Animations
--- ============================================
 OtherScriptsTab:CreateButton({
    Name = "UGC Animations",
    Callback = function()
        loadstring(game:HttpGet("https://api.rubis.app/v2/scrap/PwFrcMysMOIJuWAQ/raw"))()
    end,
 })
--- ============================================
 
 -- Universal Cool Scripts
 local OtherTab = Window:CreateTab("Universal Cool Scripts", "file-code-2")
@@ -1354,12 +1338,12 @@ loadstring(game:HttpGet("https://pastebin.com/raw/gvUFpwQw"))()
 })
 
 local Slider = OtherTab:CreateSlider({
-   Name = "Stretched Resolution (растег экрана)",
+   Name = "Stretched Resolution",
    Range = {0.01, 1.00},
    Increment = 0.01,
    Suffix = "Resolution",
    CurrentValue = 1.00,
-   Flag = "slidersr", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Flag = "slidersr",
    Callback = function(Value)
         getgenv().Resolution = {
     [".gg/scripters"] = (Value)
@@ -1392,7 +1376,7 @@ loadstring(game:HttpGet('https://pastefy.app/S7xNJSXX/raw'))()execute("Script14"
 })
 
 local Button = OtherTab:CreateButton({
-   Name = "Big Jump Button (works on mobile, tablet have errors)",
+   Name = "Big Jump Button",
    Callback = function()
 loadstring(game:HttpGet("https://pastebin.com/raw/p3TfEqQ2"))()
    end,
@@ -1411,7 +1395,7 @@ local Toggle = OtherTab:CreateToggle({
 })
 
 local Button = OtherTab:CreateButton({
-   Name = "B tools (visual lol)",
+   Name = "B tools",
    Callback = function()
 loadstring(game:HttpGet("https://cdn.wearedevs.net/scripts/BTools.txt"))()
    end,
@@ -1462,7 +1446,7 @@ local Toggle = OtherTab:CreateToggle({
 			elseif num==6 then
 				text='ezzzzz win by antioder hub'
 			end
-			if game.PlaceId==286090429 then -- If arsenal
+			if game.PlaceId==286090429 then
 				local args = {
 				    [1] = "Hah!",
 				    [2] = text,
@@ -1592,90 +1576,10 @@ local Slider = CameraTab:CreateSlider({
    Increment = 1,
    Suffix = "field of view",
    CurrentValue = 70,
-   Flag = "sliderfov", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Flag = "sliderfov",
    Callback = function(value)
         tweenService:Create(camera, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), { FieldOfView = value }):Play()
    end,
-})
-
--- ============================================
--- НОВАЯ ВКЛАДКА "Crosshair"
--- ============================================
-local CrosshairTab = Window:CreateTab("Crosshair", "target")
-
-local CrosshairSection = CrosshairTab:CreateSection("Настройки прицела")
-
-local crosshairToggle = CrosshairTab:CreateToggle({
-    Name = "Включить кастомный прицел",
-    CurrentValue = false,
-    Flag = "crosshair_toggle",
-    Callback = function(value)
-        crosshairEnabled = value
-        if value then
-            createCrosshair()
-        else
-            for _, obj in pairs(crosshairObjects) do
-                obj:Remove()
-            end
-            crosshairObjects = {}
-        end
-    end
-})
-
-local styleDropdown = CrosshairTab:CreateDropdown({
-    Name = "Стиль прицела",
-    Options = {"Крест", "Точка", "Круг", "Снайперский"},
-    CurrentOption = {"Крест"},
-    Flag = "crosshair_style",
-    Callback = function(option)
-        if type(option) == "table" then
-            crosshairStyle = option[1]
-        else
-            crosshairStyle = option
-        end
-        if crosshairEnabled then
-            createCrosshair()
-        end
-    end
-})
-
-local colorPicker = CrosshairTab:CreateColorPicker({
-    Name = "Цвет прицела",
-    Color = crosshairColor,
-    Callback = function(Color)
-        crosshairColor = Color
-        if crosshairEnabled then
-            createCrosshair()
-        end
-    end
-})
-
-local sizeSlider = CrosshairTab:CreateSlider({
-    Name = "Размер прицела",
-    Range = {5, 30},
-    Increment = 1,
-    CurrentValue = 15,
-    Flag = "crosshair_size",
-    Callback = function(value)
-        crosshairSize = value
-        if crosshairEnabled then
-            createCrosshair()
-        end
-    end
-})
-
-local thicknessSlider = CrosshairTab:CreateSlider({
-    Name = "Толщина прицела",
-    Range = {1, 5},
-    Increment = 1,
-    CurrentValue = 2,
-    Flag = "crosshair_thickness",
-    Callback = function(value)
-        crosshairThickness = value
-        if crosshairEnabled then
-            createCrosshair()
-        end
-    end
 })
 
 local VisualTab = Window:CreateTab("Visual", "eye")
@@ -1861,12 +1765,12 @@ local disableAllButton = SettingsTab:CreateButton({
             spinBot = false
         end
 
-        -- Выключаем кастомный прицел
-        crosshairEnabled = false
-        for _, obj in pairs(crosshairObjects) do
-            obj:Remove()
+        -- Выключаем ники
+        nameTagsEnabled = false
+        for name, tag in pairs(nameTags) do
+            tag:Destroy()
         end
-        crosshairObjects = {}
+        nameTags = {}
 
         game.Lighting.Ambient = ambient
         game.Lighting.OutdoorAmbient = outdoor_ambient
